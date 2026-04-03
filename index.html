@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>First Ride</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@600;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+      background: #1a0533;
+      touch-action: none;
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* BG as a div — avoids iOS fixed/attachment bugs */
+    #bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('Gemini_Generated_Image_byo5aobyo5aobyo5.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+    }
+
+    /* Hidden img for JS natural size measurement */
+    #bg-measure {
+      position: absolute;
+      width: 1px; height: 1px;
+      opacity: 0; pointer-events: none;
+    }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(10,3,28,0.55) 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    #hero {
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 10;
+      white-space: nowrap;
+      animation: fadeDown 1.2s ease both;
+    }
+    #hero h1 {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(1.8rem, 8vw, 4.5rem);
+      color: #fff;
+      text-shadow: 0 0 40px rgba(255,130,50,1), 0 2px 10px rgba(0,0,0,0.7);
+    }
+    #hero p {
+      margin-top: 0.4rem;
+      font-size: clamp(0.65rem, 2.8vw, 1.2rem);
+      color: #f5d88b;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+    }
+
+    #bike-wrap {
+      position: absolute;
+      left: 0;
+      z-index: 20;
+      animation: rideLoop 12s linear infinite;
+      will-change: transform;
+    }
+
+    #bike-img {
+      display: block;
+      height: auto;
+      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+      animation:  0.35s ease-in-out infinite alternate;
+    }
+
+    /* Speed trail behind the bike (to the left) */
+    #bike-wrap::before {
+      content: '';
+      position: absolute;
+      right: 96%;
+      top: 52%;
+      transform: translateY(-50%);
+      width: 70px;
+
+    }
+
+    @keyframes rideLoop {
+      0%   { transform: translateX(-45vw); }
+      100% { transform: translateX(112vw); }
+    }
+
+    @keyframes bob {
+      from { transform: translateY(0px); }
+      to   { transform: translateY(-5px); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity:0; transform: translateX(-50%) translateY(-20px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+
+    #tagline {
+      position: absolute;
+      bottom: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: rgba(255,255,255,0.8);
+      font-size: clamp(0.6rem, 2.2vw, 0.95rem);
+      font-weight: 800;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+      animation: fadeDown 2s ease 0.6s both;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="bg"></div>
+  <img id="bg-measure" src="Gemini_Generated_Image_byo5aobyo5aobyo5.png" alt=""/>
+
+  <div id="vignette"></div>
+
+  <div id="hero">
+    <h1>First Ride is the Best Ride</h1>
+    <p>Life's best moments when i with you</p>
+    <p id="tagline"><br>click here<br>❤️</p>
+  </div>
+
+  <div id="bike-wrap">
+    <img id="bike-img"
+         src="Gemini_Generated_Image_38qh1t38qh1t38qh-removebg-preview.png"
+         alt="Couple on bike"/>
+  </div>
+
+
+</div>
+
+<audio id="bg-music" autoplay muted loop>
+  <source src="public/song_RJUx3aLc.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  window.addEventListener("load", () => {
+    const audio = document.getElementById("bg-music");
+
+    // Try to unmute after user interaction
+    document.body.addEventListener("click", () => {
+      audio.muted = false;
+      audio.play();
+    });
+  });
+</script>
+
+
+<script>
+  /*
+   * Background image natural size: ~1408 × 792 (landscape)
+   * Road surface sits at ~61% from the TOP of the image.
+   * On portrait mobile: image is cover-scaled (height is the constraint),
+   * so rendered height > vh and rendered width < vw — we account for this.
+   */
+
+  const ROAD_FRAC   = 0.615;  // road surface Y as fraction of image height
+  const BIKE_W_FRAC = 0.26;   // bike width relative to screen width (smaller)
+  const BIKE_W_MIN  = 100;
+  const BIKE_W_MAX  = 210;
+
+  // Known natural size of the background image (fallback)
+  const BG_NAT_W = 1408;
+  const BG_NAT_H = 792;
+
+  function positionBike() {
+    const bwrap  = document.getElementById('bike-wrap');
+    const bimg   = document.getElementById('bike-img');
+    const bgMeas = document.getElementById('bg-measure');
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const natW = bgMeas.naturalWidth  || BG_NAT_W;
+    const natH = bgMeas.naturalHeight || BG_NAT_H;
+
+    // object-fit: cover + object-position: center top
+    // cover: scale so BOTH dimensions >= container
+    const scaleX = vw / natW;
+    const scaleY = vh / natH;
+    const scale  = Math.max(scaleX, scaleY);
+
+    const rendW = natW * scale;
+    const rendH = natH * scale;
+
+    // position: center horizontally, top-aligned
+    const offsetX = (vw - rendW) / 2;   // may be negative (cropped sides)
+    const offsetY = 0;                   // top aligned
+
+    // Road Y in screen coordinates
+    const roadScreenY = offsetY + rendH * ROAD_FRAC;
+
+    // Bike width
+    const bikeW = Math.max(BIKE_W_MIN, Math.min(BIKE_W_MAX, vw * BIKE_W_FRAC));
+    bimg.style.width = bikeW + 'px';
+
+    // Estimate bike rendered height from natural aspect ratio
+    const bNatW = bimg.naturalWidth  || 1;
+    const bNatH = bimg.naturalHeight || 1;
+    const bikeH = bikeW * (bNatH / bNatW);
+
+    // Place bike so its BOTTOM aligns with the road surface
+    const bikeTop = roadScreenY - bikeH;
+    bwrap.style.top = Math.max(0, bikeTop) + 'px';
+  }
+
+  document.getElementById('bg-measure').addEventListener('load', positionBike);
+  document.getElementById('bike-img').addEventListener('load', positionBike);
+  window.addEventListener('resize', positionBike);
+  window.addEventListener('orientationchange', () => setTimeout(positionBike, 350));
+  window.addEventListener('load', positionBike);
+  // extra safety for slow connections
+  setTimeout(positionBike, 800);
+  setTimeout(positionBike, 2000);
+</script>
+</body>
+</html>
